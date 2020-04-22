@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 
 	"github.com/haproxytech/kubernetes-ingress/controller/utils"
 	"github.com/haproxytech/models"
@@ -95,7 +96,12 @@ func (c *HAProxyController) refreshBackendSwitching() (reload bool) {
 					condTest = fmt.Sprintf("{ req.hdr(host),field(1,:) -i %s } ", rule.Host)
 				}
 				if rule.Path != "" {
-					condTest = fmt.Sprintf("%s{ path_beg %s }", condTest, rule.Path)
+					if strings.HasPrefix(rule.Path, "/^/") {
+						// It's a regular expression. Use path_reg without first slash.
+						condTest = fmt.Sprintf("%s{ path_reg %s }", condTest, rule.Path[1:])
+					} else {
+						condTest = fmt.Sprintf("%s{ path_beg %s }", condTest, rule.Path)
+					}
 				}
 				if condTest == "" {
 					log.Printf("both Host and Path are empty for frontend %v with backend %v, SKIP\n", frontend, rule.Backend)
