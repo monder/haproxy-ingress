@@ -1,24 +1,21 @@
-name: go build
-on: [push, pull_request]
+name: Build
+on: [push]
 jobs:
-
   build:
-    name: Build
     runs-on: ubuntu-latest
     steps:
-
-    - name: Set up Go 1.14
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.14
-      id: go
-
-    - name: Check out code into the Go module directory
+    - name: Checkout
       uses: actions/checkout@v1
-
-    - name: Get dependencies
+    - name: Set variables
+      id: vars
       run: |
-        go get -v -t -d ./...
-    - name: Build
+        echo ::set-output name=docker_image::docker.pkg.github.com/${{ github.repository }}/haproxy-ingress:$(git rev-parse --short=7 ${{ github.sha }})
+    - name: Build docker image
       run: |
-        go build -v .
+        docker build . --file build/Dockerfile --tag ${{ steps.vars.outputs.docker_image }}
+    - name: Login to registry
+      run: |
+        echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com --username ${{ github.actor }} --password-stdin
+    - name: Push docker image
+      run: |
+        docker push ${{ steps.vars.outputs.docker_image }}
