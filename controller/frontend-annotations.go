@@ -304,14 +304,11 @@ func (c *HAProxyController) handleRequestCapture(ingress *Ingress) error {
 			mapFiles.AppendHost(key, hostname)
 		}
 
-		mapFile := path.Join(HAProxyMapDir, strconv.FormatUint(key, 10)) + ".lst"
 		httpRule := models.HTTPRequestRule{
 			Index:         utils.PtrInt64(0),
 			Type:          "capture",
 			CaptureSample: sample,
-			Cond:          "if",
 			CaptureLen:    captureLen,
-			CondTest:      fmt.Sprintf("{ req.hdr(Host) -f %s }", mapFile),
 		}
 		tcpRule := models.TCPRequestRule{
 			Index:      utils.PtrInt64(0),
@@ -319,8 +316,6 @@ func (c *HAProxyController) handleRequestCapture(ingress *Ingress) error {
 			Action:     "capture",
 			CaptureLen: captureLen,
 			Expr:       sample,
-			Cond:       "if",
-			CondTest:   fmt.Sprintf("{ req_ssl_sni -f %s }", mapFile),
 		}
 		c.cfg.FrontendHTTPRules[REQUEST_CAPTURE][key] = httpRule
 		c.cfg.FrontendTCPRules[REQUEST_CAPTURE][key] = tcpRule
